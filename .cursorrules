@@ -1,0 +1,87 @@
+# Coding Standards and Best Practices for MB Script Project
+
+## Core Principles
+- Follow SOLID principles strictly
+- Apply DRY, KISS, and YAGNI principles
+- Write self-documenting code with meaningful names
+- Prefer composition over inheritance
+
+## TypeScript Standards
+- Use strict TypeScript settings - no 'any' types allowed
+- Prefer interfaces over types for object shapes
+- Use const assertions where appropriate
+- Always define return types for functions
+- Use union types instead of enums when possible
+
+## Code Structure
+- Single Responsibility Principle: one class/function = one responsibility
+- Keep functions under 20 lines when possible
+- Use dependency injection pattern
+- Separate concerns: business logic, data access, presentation
+- Follow clean architecture principles
+
+## Naming Conventions
+- Use descriptive, meaningful names
+- Functions: verbs (getUserData, validateInput)
+- Variables: nouns (userData, validationResult)
+- Constants: UPPER_SNAKE_CASE
+- Classes: PascalCase
+- Files: kebab-case for components, camelCase for utilities
+
+## Error Handling
+- Always handle errors explicitly
+- Use custom error classes with meaningful messages
+- Log errors with appropriate context
+- Implement graceful fallbacks
+- Never swallow errors silently
+
+## Function Design
+- Pure functions when possible (no side effects)
+- Maximum 3-4 parameters, use objects for more
+- Return early to reduce nesting
+- Use async/await over promises chains
+- Handle both success and error cases
+
+## Testing Requirements
+- Write tests for all business logic
+- Use descriptive test names
+- Follow AAA pattern (Arrange, Act, Assert)
+- Mock external dependencies
+- Aim for 90%+ test coverage
+
+## Security Practices
+- Validate all inputs
+- Sanitize user data
+- Use environment variables for secrets
+- Implement proper error messages (don't expose internals)
+- Follow principle of least privilege
+
+## Performance Considerations
+- Use appropriate data structures
+- Avoid premature optimization
+- Profile before optimizing
+- Consider memory usage
+- Implement proper caching strategies
+
+## Code Organization
+- Group related functionality together
+- Use barrel exports (index.ts files)
+- Keep file size reasonable (< 300 lines)
+- Use clear folder structure
+- Separate types, interfaces, and implementations
+
+## Documentation Requirements
+- Use JSDoc comments for all public APIs
+- Document complex business logic
+- Include usage examples in comments
+- Keep README.md updated
+- Document architectural decisions
+
+## Specific to This Project (Price Monitoring)
+- All price values should use number type with proper validation
+- Telegram message formatting should be consistent
+- Web scraping should include retry logic and error handling
+- All external API calls must be wrapped in try-catch
+- Use structured logging for monitoring and debugging
+- Implement rate limiting for web requests
+- Store sensitive data (tokens) only in environment variables
