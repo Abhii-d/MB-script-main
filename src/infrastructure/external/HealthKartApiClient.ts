@@ -230,9 +230,9 @@ export class HealthKartApiClient {
       }
 
       // Check maximum price
-      if (filter.maxPrice && product.offer_pr > filter.maxPrice) {
-        return false;
-      }
+      // if (filter.maxPrice && product.offer_pr > filter.maxPrice) {
+      //   return false;
+      // }
 
       // Check minimum rating
       if (filter.minRating && product.rating < filter.minRating) {
@@ -268,6 +268,22 @@ export class HealthKartApiClient {
           return false;
         }
       }
+
+      // Check flavors (we'll need to extract from product groups for filtering)
+      if (filter.flavors && filter.flavors.length > 0) {
+        const flavorMatches = this.checkProductFlavor(product, filter.flavors);
+        if (!flavorMatches) {
+          return false;
+        }
+      }
+
+      // Check weight buckets - COMMENTED OUT (not filtering by weight for now)
+      // if (filter.weightBuckets && filter.weightBuckets.length > 0) {
+      //   const weightMatches = this.checkProductWeight(product, filter.weightBuckets);
+      //   if (!weightMatches) {
+      //     return false;
+      //   }
+      // }
 
       return true;
     });
@@ -430,6 +446,46 @@ export class HealthKartApiClient {
       }
     );
   }
+
+  /**
+   * Check if product matches flavor preferences
+   */
+  private checkProductFlavor(product: HealthKartProduct, flavors: string[]): boolean {
+    for (const group of product.grps || []) {
+      for (const attribute of group.values || []) {
+        if (attribute.nm === 'gen-sn-flv' || attribute.nm === 'Flavor-base' || 
+            attribute.dis_nm?.toLowerCase().includes('flavour')) {
+          const flavorMatches = flavors.some(flavor =>
+            attribute.val.toLowerCase().includes(flavor.toLowerCase())
+          );
+          if (flavorMatches) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if product matches weight bucket preferences - COMMENTED OUT (not filtering by weight for now)
+   */
+  // private checkProductWeight(product: HealthKartProduct, weightBuckets: string[]): boolean {
+  //   for (const group of product.grps || []) {
+  //     for (const attribute of group.values || []) {
+  //       if (attribute.nm === 'gen-pro-siz' || attribute.nm === 'sn-drv-wt' || 
+  //           attribute.dis_nm?.toLowerCase().includes('weight')) {
+  //         const weightMatches = weightBuckets.some(weight =>
+  //           attribute.val.toLowerCase().includes(weight.toLowerCase())
+  //         );
+  //         if (weightMatches) {
+  //           return true;
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return false;
+  // }
 
   /**
    * Utility function for delays

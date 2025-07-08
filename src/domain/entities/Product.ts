@@ -18,8 +18,10 @@ export class Product {
     private readonly _reviewCount: number,
     private readonly _isInStock: boolean,
     private readonly _url: string,
+    private readonly _urlFragment: string,
+    private readonly _pk_type: boolean,
     private readonly _specifications: ProductSpecifications,
-    private _lastUpdated: Date
+    private _lastUpdated: Date,
   ) {}
 
   /**
@@ -40,8 +42,10 @@ export class Product {
       data.reviewCount,
       data.isInStock,
       data.url,
+      data.urlFragment,
+      data.pk_type,
       data.specifications,
-      data.lastUpdated
+      data.lastUpdated,
     );
   }
 
@@ -125,6 +129,14 @@ export class Product {
 
   public get url(): string {
     return this._url;
+  }
+
+  public get urlFragment(): string {
+    return this._urlFragment;
+  }
+
+  public get pk_type(): boolean {
+    return this._pk_type;
   }
 
   public get specifications(): ProductSpecifications {
@@ -252,6 +264,8 @@ export class Product {
       this._reviewCount,
       this._isInStock,
       this._url,
+      this._urlFragment,
+      this._pk_type,
       this._specifications,
       new Date()
     );
@@ -286,8 +300,10 @@ export class Product {
       reviewCount: this._reviewCount,
       isInStock: this._isInStock,
       url: this._url,
+      urlFragment: this._urlFragment,
+      pk_type: this._pk_type,
       specifications: { ...this._specifications },
-      lastUpdated: new Date(this._lastUpdated),
+      lastUpdated: new Date(this._lastUpdated)
     };
   }
 

@@ -84,8 +84,9 @@ export class HealthKartTransformService {
     // Extract specifications from groups
     const specifications = this.extractSpecifications(healthKartProduct.grps);
 
-    // Build full URL
-    const fullUrl = `https://www.healthkart.com${healthKartProduct.urlFragment}`;
+    // Build full URL based on pk_type
+    const urlPrefix = healthKartProduct.pk_type ? '/pk' : '/sv';
+    const fullUrl = `https://www.healthkart.com${urlPrefix}${healthKartProduct.urlFragment}`;
 
     // Transform to our domain interface
     const productData: ProductInterface = {
@@ -100,8 +101,10 @@ export class HealthKartTransformService {
       reviewCount: this.validateCount(healthKartProduct.nrvw, 'reviewCount'),
       isInStock: !healthKartProduct.oos && healthKartProduct.ordrEnbld,
       url: fullUrl,
+      urlFragment: healthKartProduct.urlFragment,
+      pk_type: healthKartProduct.pk_type,
       specifications,
-      lastUpdated: new Date(),
+      lastUpdated: new Date()
     };
 
     return productData;
@@ -134,11 +137,13 @@ export class HealthKartTransformService {
   private extractSpecifications(groups: ProductGroup[]): any {
     const specs: any = {
       weight: '',
+      weightBucket: '',
       servingSize: '',
       proteinPerServing: '',
       proteinPercentage: 0,
       servingsPerContainer: 0,
       flavor: '',
+      flavorBase: '',
       pricePerKg: 0,
     };
 
@@ -166,11 +171,13 @@ export class HealthKartTransformService {
       // Return default specifications if extraction fails
       return {
         weight: 'Unknown',
+        weightBucket: 'Unknown',
         servingSize: 'Unknown',
         proteinPerServing: '0g',
         proteinPercentage: 0,
         servingsPerContainer: 0,
         flavor: 'Unknown',
+        flavorBase: 'Unknown',
         pricePerKg: 0,
       };
     }
@@ -188,6 +195,9 @@ export class HealthKartTransformService {
       case 'gen-pro-siz':
         specs.weight = this.sanitizeString(value);
         break;
+      case 'sn-drv-wt':
+        specs.weightBucket = this.sanitizeString(value);
+        break;
       case 'gen-pro-sev':
         specs.servingSize = this.sanitizeString(value);
         break;
@@ -203,6 +213,9 @@ export class HealthKartTransformService {
       case 'gen-sn-flv':
         specs.flavor = this.sanitizeString(value);
         break;
+      case 'Flavor-base':
+        specs.flavorBase = this.sanitizeString(value);
+        break;
       case 'ppk-pro':
         specs.pricePerKg = this.parseNumericValue(value);
         break;
@@ -212,8 +225,14 @@ export class HealthKartTransformService {
     if (!specs.weight && displayName?.toLowerCase().includes('weight')) {
       specs.weight = this.sanitizeString(value);
     }
+    if (!specs.weightBucket && displayName?.toLowerCase().includes('weight bucket')) {
+      specs.weightBucket = this.sanitizeString(value);
+    }
     if (!specs.flavor && displayName?.toLowerCase().includes('flavour')) {
       specs.flavor = this.sanitizeString(value);
+    }
+    if (!specs.flavorBase && displayName?.toLowerCase().includes('flavour base')) {
+      specs.flavorBase = this.sanitizeString(value);
     }
   }
 
@@ -228,9 +247,11 @@ export class HealthKartTransformService {
 
     // Ensure string fields are not empty
     if (!specs.weight) specs.weight = 'Unknown';
+    if (!specs.weightBucket) specs.weightBucket = 'Unknown';
     if (!specs.servingSize) specs.servingSize = 'Unknown';
     if (!specs.proteinPerServing) specs.proteinPerServing = '0g';
     if (!specs.flavor) specs.flavor = 'Unknown';
+    if (!specs.flavorBase) specs.flavorBase = 'Unknown';
   }
 
   /**

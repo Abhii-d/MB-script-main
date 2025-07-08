@@ -6,6 +6,7 @@
 import { Product } from '../../domain/entities/Product.js';
 import { HealthKartApiClient } from '../../infrastructure/external/HealthKartApiClient.js';
 import { HealthKartTransformService } from '../../infrastructure/external/HealthKartTransformService.js';
+import { TelegramService } from '../../infrastructure/external/TelegramService.js';
 import { ProductFilter, AlertConfiguration } from '../../shared/types/index.js';
 import { MonitoringError } from '../../shared/errors/index.js';
 import { getLogger } from '../../shared/utils/logger.js';
@@ -14,6 +15,8 @@ export interface MonitoringResult {
   totalProducts: number;
   matchingProducts: Product[];
   alertTriggered: boolean;
+  alertsSent: number;
+  alertsFailed: number;
   timestamp: Date;
   errors: string[];
 }
@@ -21,6 +24,7 @@ export interface MonitoringResult {
 export interface ProductMonitoringDependencies {
   apiClient: HealthKartApiClient;
   transformService: HealthKartTransformService;
+  telegramService?: TelegramService; // Optional for demo mode
 }
 
 export class MonitorProductDealsUseCase {
@@ -66,14 +70,40 @@ export class MonitorProductDealsUseCase {
       // Step 4: Apply domain-level filtering and analysis
       const matchingProducts = this.findMatchingProducts(products, alertConfig);
 
-      // Step 5: Determine if alerts should be triggered
+      // Step 5: Send Telegram alerts if service is available
+      let alertsSent = 0;
+      let alertsFailed = 0;
+      
+      if (this.dependencies.telegramService && matchingProducts.length > 0) {
+        try {
+          const alertResults = await this.dependencies.telegramService.sendDealAlerts(matchingProducts);
+          alertsSent = alertResults.sent;
+          alertsFailed = alertResults.failed;
+          
+          this.logger.info('Telegram alerts sent', {
+            totalAlerts: matchingProducts.length,
+            sent: alertsSent,
+            failed: alertsFailed,
+          });
+        } catch (error) {
+          this.logger.logError(error as Error, {
+            operation: 'sendTelegramAlerts',
+            productCount: matchingProducts.length,
+          });
+          alertsFailed = matchingProducts.length;
+        }
+      }
+
+      // Step 6: Determine if alerts were triggered
       const alertTriggered = matchingProducts.length > 0;
 
-      // Step 6: Build monitoring result
+      // Step 7: Build monitoring result
       const result: MonitoringResult = {
         totalProducts: products.length,
         matchingProducts,
         alertTriggered,
+        alertsSent,
+        alertsFailed,
         timestamp: new Date(),
         errors: [],
       };
@@ -207,6 +237,78 @@ export class MonitorProductDealsUseCase {
   }
 
   /**
+   * Analyze flavor and weight distribution in deals
+   */
+  public analyzeProductDistribution(products: Product[]): {
+    flavorDistribution: Array<{ flavor: string; count: number; avgDiscount: number }>;
+    weightDistribution: Array<{ weight: string; count: number; avgDiscount: number }>;
+    flavorBaseDistribution: Array<{ flavorBase: string; count: number; avgDiscount: number }>;
+  } {
+    // Analyze flavor distribution
+    const flavorCounts = products.reduce((acc, product) => {
+      const flavor = product.specifications.flavor || 'Unknown';
+      if (!acc[flavor]) {
+        acc[flavor] = { count: 0, totalDiscount: 0 };
+      }
+      acc[flavor].count++;
+      acc[flavor].totalDiscount += product.discountPercentage;
+      return acc;
+    }, {} as Record<string, { count: number; totalDiscount: number }>);
+
+    const flavorDistribution = Object.entries(flavorCounts)
+      .map(([flavor, data]) => ({
+        flavor,
+        count: data.count,
+        avgDiscount: Math.round((data.totalDiscount / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Analyze weight distribution
+    const weightCounts = products.reduce((acc, product) => {
+      const weight = product.specifications.weightBucket || product.specifications.weight || 'Unknown';
+      if (!acc[weight]) {
+        acc[weight] = { count: 0, totalDiscount: 0 };
+      }
+      acc[weight].count++;
+      acc[weight].totalDiscount += product.discountPercentage;
+      return acc;
+    }, {} as Record<string, { count: number; totalDiscount: number }>);
+
+    const weightDistribution = Object.entries(weightCounts)
+      .map(([weight, data]) => ({
+        weight,
+        count: data.count,
+        avgDiscount: Math.round((data.totalDiscount / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Analyze flavor base distribution
+    const flavorBaseCounts = products.reduce((acc, product) => {
+      const flavorBase = product.specifications.flavorBase || 'Unknown';
+      if (!acc[flavorBase]) {
+        acc[flavorBase] = { count: 0, totalDiscount: 0 };
+      }
+      acc[flavorBase].count++;
+      acc[flavorBase].totalDiscount += product.discountPercentage;
+      return acc;
+    }, {} as Record<string, { count: number; totalDiscount: number }>);
+
+    const flavorBaseDistribution = Object.entries(flavorBaseCounts)
+      .map(([flavorBase, data]) => ({
+        flavorBase,
+        count: data.count,
+        avgDiscount: Math.round((data.totalDiscount / data.count) * 100) / 100,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      flavorDistribution,
+      weightDistribution,
+      flavorBaseDistribution,
+    };
+  }
+
+  /**
    * Build product filter from alert configuration
    */
   private buildProductFilter(alertConfig: AlertConfiguration): ProductFilter {
@@ -216,6 +318,8 @@ export class MonitorProductDealsUseCase {
       minRating: alertConfig.minRating,
       brands: alertConfig.brands,
       categories: alertConfig.categories,
+      flavors: alertConfig.flavors,
+      weightBuckets: alertConfig.weightBuckets,
       inStockOnly: true,
       minReviews: 1, // At least 1 review for credibility
     };
@@ -274,6 +378,8 @@ export class MonitorProductDealsUseCase {
       totalProducts: 0,
       matchingProducts: [],
       alertTriggered: false,
+      alertsSent: 0,
+      alertsFailed: 0,
       timestamp: new Date(),
       errors: [],
     };
@@ -283,6 +389,8 @@ export class MonitorProductDealsUseCase {
         aggregated.totalProducts += result.value.totalProducts;
         aggregated.matchingProducts.push(...result.value.matchingProducts);
         aggregated.alertTriggered = aggregated.alertTriggered || result.value.alertTriggered;
+        aggregated.alertsSent += result.value.alertsSent;
+        aggregated.alertsFailed += result.value.alertsFailed;
         aggregated.errors.push(...result.value.errors);
       } else {
         const errorMessage = result.reason instanceof Error 
