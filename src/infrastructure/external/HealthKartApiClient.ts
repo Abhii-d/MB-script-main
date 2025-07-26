@@ -230,9 +230,9 @@ export class HealthKartApiClient {
       }
 
       // Check maximum price
-      // if (filter.maxPrice && product.offer_pr > filter.maxPrice) {
-      //   return false;
-      // }
+      if (filter.maxPrice && product.offer_pr > filter.maxPrice) {
+        return false;
+      }
 
       // Check minimum rating
       if (filter.minRating && product.rating < filter.minRating) {
@@ -251,9 +251,7 @@ export class HealthKartApiClient {
 
       // Check preferred brands
       if (filter.brands && filter.brands.length > 0) {
-        const brandMatches = filter.brands.some(brand =>
-          product.brName.toLowerCase().includes(brand.toLowerCase())
-        );
+        const brandMatches = filter.brands.some(brand => product.brName.toLowerCase()===(brand.toLowerCase()));
         if (!brandMatches) {
           return false;
         }

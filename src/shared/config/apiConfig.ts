@@ -72,16 +72,12 @@ const DEFAULT_API_CONFIG: ApiConfiguration = {
     inStockOnly: true,
     minReviews: 1,
     minRating: 3.5,
-    maxPrice: 10000,
+    maxPrice: 7000,
     brands: [
       'muscleblaze',
       'optimum nutrition',
-      'dymatize',
-      'gnc',
       'ON',
-      'Fuel One',
-      'bsn',
-      'muscletech',
+      'Fuel One'
     ],
     categories: ['wheyProtein', 'Whey Proteins', 'Whey Protein'],
   },

@@ -12,6 +12,8 @@ import { getLogger } from '../../shared/utils/logger.js';
 import { getApiConfiguration, ApiConfiguration } from '../../shared/config/apiConfig.js';
 import { ApiConfigurationError } from '../../shared/errors/index.js';
 import { withRetry, withTimeout } from '../../shared/utils/apiUtils.js';
+import { ProductFilter } from '../../shared/types/index.js';
+import { TelegramMessage } from '../external/TelegramService.js';
 
 /**
  * Interface for service factory dependencies
@@ -96,7 +98,7 @@ export class ServiceFactory {
   private wrapHealthKartClient(client: HealthKartApiClient): HealthKartApiClient {
     const originalFetch = client.fetchFilteredProducts.bind(client);
     
-    client.fetchFilteredProducts = async (categoryCode: string, filters: any) => {
+    client.fetchFilteredProducts = async (categoryCode: string, filters: ProductFilter) => {
       return withRetry(
         async () => withTimeout(
           originalFetch(categoryCode, filters),
@@ -120,7 +122,7 @@ export class ServiceFactory {
   private wrapTelegramService(service: TelegramService): TelegramService {
     const originalSendMessage = service.sendMessage.bind(service);
     
-    service.sendMessage = async (messageData: any) => {
+    service.sendMessage = async (messageData: TelegramMessage) => {
       return withRetry(
         async () => withTimeout(
           originalSendMessage(messageData),

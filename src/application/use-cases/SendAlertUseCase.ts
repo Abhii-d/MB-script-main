@@ -14,6 +14,7 @@ import {
   TelegramServiceError 
 } from '../../shared/errors/index.js';
 import { HealthKartProduct, ProductFilter } from '../../shared/types/index.js';
+import { TelegramMessage } from '../../infrastructure/external/TelegramService.js';
 
 /**
  * Interface for alert use case dependencies
@@ -47,15 +48,7 @@ export interface TelegramService {
   sendMessage(messageData: TelegramMessage): Promise<boolean>;
 }
 
-/**
- * Interface for Telegram message
- */
-export interface TelegramMessage {
-  chatId: string;
-  message: string;
-  parseMode?: 'Markdown' | 'HTML';
-  disablePreview?: boolean;
-}
+
 
 /**
  * Interface for alert execution result

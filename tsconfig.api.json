@@ -10,9 +10,6 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/interfaces/cli/demo.ts",
-    "**/__tests__/**",
-    "**/__mocks__/**"
+    "dist"
   ]
 }

@@ -3,7 +3,7 @@
  * Following the guideline: Validate all external inputs and convert to domain models
  */
 
-import { HealthKartProduct, ProductGroup, ProductAttribute, Product as ProductInterface } from '../../shared/types/index.js';
+import { HealthKartProduct, ProductGroup, ProductAttribute, Product as ProductInterface, ProductSpecifications } from '../../shared/types/index.js';
 import { Product } from '../../domain/entities/Product.js';
 import { DataParsingError } from '../../shared/errors/index.js';
 import { getLogger } from '../../shared/utils/logger.js';
@@ -134,8 +134,8 @@ export class HealthKartTransformService {
   /**
    * Extract product specifications from HealthKart groups
    */
-  private extractSpecifications(groups: ProductGroup[]): any {
-    const specs: any = {
+  private extractSpecifications(groups: ProductGroup[]): ProductSpecifications {
+    const specs: ProductSpecifications = {
       weight: '',
       weightBucket: '',
       servingSize: '',
@@ -186,7 +186,7 @@ export class HealthKartTransformService {
   /**
    * Map HealthKart attribute to our specification
    */
-  private mapAttributeToSpec(attribute: ProductAttribute, specs: any): void {
+  private mapAttributeToSpec(attribute: ProductAttribute, specs: ProductSpecifications): void {
     const key = attribute.nm;
     const value = attribute.val;
     const displayName = attribute.dis_nm;
@@ -239,7 +239,7 @@ export class HealthKartTransformService {
   /**
    * Post-process specifications for consistency
    */
-  private postProcessSpecifications(specs: any): void {
+  private postProcessSpecifications(specs: ProductSpecifications): void {
     // Ensure numeric fields are valid numbers
     specs.proteinPercentage = this.validatePercentage(specs.proteinPercentage, 'proteinPercentage');
     specs.servingsPerContainer = Math.max(0, Math.floor(specs.servingsPerContainer));
