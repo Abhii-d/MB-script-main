@@ -450,7 +450,7 @@ export class HealthKartApiClient {
   /**
    * Check if product matches flavor preferences
    */
-  private checkProductFlavor(product: HealthKartProduct, flavors: string[]): boolean {
+  private checkProductFlavor(product: HealthKartProduct, flavors: readonly string[]): boolean {
     for (const group of product.grps || []) {
       for (const attribute of group.values || []) {
         if (attribute.nm === 'gen-sn-flv' || attribute.nm === 'Flavor-base' || 

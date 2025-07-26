@@ -1,0 +1,187 @@
+name: Deploy Scheduler to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Create scheduler page
+        run: |
+          mkdir -p _site
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>HealthKart Deal Monitor</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                  .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .status { padding: 15px; border-radius: 5px; margin: 20px 0; }
+                  .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                  .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+                  .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+                  button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+                  button:hover { background: #0056b3; }
+                  button:disabled { background: #6c757d; cursor: not-allowed; }
+                  .log { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 20px 0; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 14px; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🏋️‍♂️ HealthKart Deal Monitor</h1>
+                  <p>Automated monitoring system for supplement deals with Telegram alerts.</p>
+                  
+                  <div id="status" class="status info">
+                      <strong>Status:</strong> Initializing...
+                  </div>
+                  
+                  <div>
+                      <button onclick="triggerAlert()" id="triggerBtn">🔔 Trigger Alert Check</button>
+                      <button onclick="testConnection()" id="testBtn">🔍 Test API Connection</button>
+                      <button onclick="clearLog()" id="clearBtn">🗑️ Clear Log</button>
+                  </div>
+                  
+                  <div id="log" class="log"></div>
+              </div>
+              
+              <script>
+                  const API_URL = '${{ secrets.VERCEL_API_URL }}' || 'https://your-vercel-app.vercel.app';
+                  
+                  function log(message) {
+                      const logDiv = document.getElementById('log');
+                      const timestamp = new Date().toLocaleString();
+                      logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+                      logDiv.scrollTop = logDiv.scrollHeight;
+                  }
+                  
+                  function updateStatus(message, type = 'info') {
+                      const statusDiv = document.getElementById('status');
+                      statusDiv.className = `status ${type}`;
+                      statusDiv.innerHTML = `<strong>Status:</strong> ${message}`;
+                  }
+                  
+                  async function triggerAlert() {
+                      const btn = document.getElementById('triggerBtn');
+                      btn.disabled = true;
+                      btn.textContent = '⏳ Checking...';
+                      
+                      try {
+                          log('🔍 Triggering deal check...');
+                          updateStatus('Checking for deals...', 'info');
+                          
+                          const response = await fetch(`${API_URL}/api/send-alert`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ source: 'github-pages-manual' })
+                          });
+                          
+                          const result = await response.json();
+                          
+                          if (result.success) {
+                              log(`✅ Success: ${result.data?.totalProductsFetched || 0} products, ${result.data?.qualifyingDeals || 0} deals`);
+                              log(`📱 Telegram sent: ${result.data?.telegramSent ? 'Yes' : 'No'}`);
+                              updateStatus(`Found ${result.data?.qualifyingDeals || 0} deals`, 'success');
+                          } else {
+                              log(`❌ Error: ${result.error}`);
+                              updateStatus('Check failed', 'error');
+                          }
+                      } catch (error) {
+                          log(`❌ Network error: ${error.message}`);
+                          updateStatus('Connection failed', 'error');
+                      } finally {
+                          btn.disabled = false;
+                          btn.textContent = '🔔 Trigger Alert Check';
+                      }
+                  }
+                  
+                  async function testConnection() {
+                      const btn = document.getElementById('testBtn');
+                      btn.disabled = true;
+                      btn.textContent = '⏳ Testing...';
+                      
+                      try {
+                          log('🔍 Testing API connection...');
+                          const response = await fetch(`${API_URL}/health`);
+                          const result = await response.json();
+                          
+                          log(`✅ API connected: ${result.service} v${result.version}`);
+                          updateStatus('API connected', 'success');
+                      } catch (error) {
+                          log(`❌ Connection failed: ${error.message}`);
+                          updateStatus('API disconnected', 'error');
+                      } finally {
+                          btn.disabled = false;
+                          btn.textContent = '🔍 Test API Connection';
+                      }
+                  }
+                  
+                  function clearLog() {
+                      document.getElementById('log').innerHTML = '';
+                  }
+                  
+                  // Auto-trigger on page load
+                  window.onload = function() {
+                      log('🚀 HealthKart Deal Monitor initialized');
+                      log(`📡 API URL: ${API_URL}`);
+                      testConnection();
+                      
+                      // Set up automatic checking every 30 minutes
+                      setInterval(triggerAlert, 30 * 60 * 1000);
+                      log('⏰ Automatic checking enabled (every 30 minutes)');
+                  };
+              </script>
+          </body>
+          </html>
+          EOF
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

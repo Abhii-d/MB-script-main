@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/index.ts",
+    "src/scheduler.ts",
+    "src/shared/**/*",
+    "src/infrastructure/**/*",
+    "src/application/**/*",
+    "src/domain/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/interfaces/cli/demo.ts",
+    "**/__tests__/**",
+    "**/__mocks__/**"
+  ]
+}

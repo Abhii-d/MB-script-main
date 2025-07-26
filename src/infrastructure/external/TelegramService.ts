@@ -84,105 +84,60 @@ export class TelegramService {
    */
   public async sendDealAlerts(
     products: Product[],
-    chatId: string = 'fixed_chat_id'
-  ): Promise<any>{
-    // const startTime = Date.now();
+    chatId?: string
+  ): Promise<{ sent: number; failed: number }> {
+    const startTime = Date.now();
+    const targetChatId = chatId || this.config.defaultChatId;
+    
+    if (products.length === 0) {
+      this.logger.info('No products to send alerts for', { chatId: targetChatId });
+      return { sent: 0, failed: 0 };
+    }
     
     try {
       this.logger.info('Sending batch deal alerts', {
         productCount: products.length,
-        chatId: chatId || this.config.defaultChatId,
+        chatId: targetChatId,
       });
 
-      // const results: boolean[] = [];
-      // let sent = 0;
-      let count = 0;
-      // let failed = 0;
-      let message = "";
-      const sortedProducts = products.sort((a, b) => b.discountPercentage - a.discountPercentage);
-
-      // Send alerts one by one to avoid rate limiting
-      for (const product of sortedProducts) {
-        // message.concat(this.formatDealAlert(product));
-        message = message.concat(this.formatDealAlert(product));
-        count++;
-        if (count > 5) {
-          break;
-        }
-        // try {
-        //   message.push(this.formatDealAlert(product));
-        //   // const success = await this.sendDealAlert(product, chatId);
-        //   // results.push(success);
-          
-        //   // if (success) {
-        //   //   sent++;
-        //   // } else {
-        //   //   failed++;
-        //   // }
-
-        //   // // Add small delay between messages to respect rate limits
-        //   // if (products.length > 1) {
-        //   //   await this.delay(1000); // 1 second between messages
-        //   // }
-        // } catch (error) {
-        //   this.logger.warn('Failed to send individual alert', {
-        //     productId: product.id,
-        //     error: error instanceof Error ? error.message : String(error),
-        //   });
-        //   results.push(false);
-        //   failed++;
-        // }
-      }
-      try {
-
-        const success = await this.sendMessage({chatId,
-          message,
-          parseMode: 'Markdown',
-          disablePreview: true,
-        });
-
-        if (success) {
-          this.logger.info('Deal alert sent successfully', {
-            // productId: product.id,
-            // productName: product.name,
-            // discount: `${product.discountPercentage}%`,
-            // price: `₹${product.currentPrice}`,
-            // chatId: targetChatId,
-            // duration: `${duration}ms`,
-          });
-        }
-  
-        return success;
-      }
-      catch (error) {
-        this.logger.logError(error as Error, {
-          operation: 'sendDealAlerts',
-          productCount: products.length,
-        });
-      }
-
-      // const duration = Date.now() - startTime;
+      // Use the existing message formatter for consistency
+      const message = this.formatConsolidatedDealAlert(products);
       
-      // this.logger.info('Batch alert sending completed', {
-      //   totalProducts: products.length,
-      //   sent,
-      //   failed,
-      //   duration: `${duration}ms`,
-      //   successRate: `${((sent / products.length) * 100).toFixed(1)}%`,
-      // });
+      const success = await this.sendMessage({
+        chatId: targetChatId,
+        message,
+        parseMode: 'Markdown',
+        disablePreview: true,
+      });
 
-      // return { sent, failed, results };
+      const duration = Date.now() - startTime;
+      
+      if (success) {
+        this.logger.info('Batch deal alert sent successfully', {
+          productCount: products.length,
+          chatId: targetChatId,
+          duration: `${duration}ms`,
+        });
+        return { sent: 1, failed: 0 };
+      } else {
+        this.logger.warn('Batch deal alert failed to send', {
+          productCount: products.length,
+          chatId: targetChatId,
+          duration: `${duration}ms`,
+        });
+        return { sent: 0, failed: 1 };
+      }
+      
     } catch (error) {
+      const duration = Date.now() - startTime;
       this.logger.logError(error as Error, {
         operation: 'sendDealAlerts',
         productCount: products.length,
+        chatId: targetChatId,
+        duration: `${duration}ms`,
       });
 
-      return {
-        sent: 0,
-        failed: products.length,
-        results: new Array(products.length).fill(false),
-      };
+      return { sent: 0, failed: 1 };
     }
   }
 
@@ -331,6 +286,26 @@ ${ratingStars} ${product.rating}/5 (${product.reviewCount} reviews)
 🛒 [Order Now](${product.url})
 
 #SupplementDeals #WheyProtein #${product.brand.replace(/\s+/g, '')}`;
+  }
+
+  /**
+   * Format consolidated deal alert message
+   */
+  private formatConsolidatedDealAlert(products: Product[]): string {
+    const header = `🚨 *${products.length} New Deal${products.length > 1 ? 's' : ''} Found!*\n\n`;
+    
+    const deals = products.slice(0, 5).map(product => 
+      `💊 *${product.name}*\n` +
+      `🏷️ Brand: ${product.brand}\n` +
+      `💰 Price: ₹${product.currentPrice} (was ₹${product.originalPrice})\n` +
+      `🔥 Discount: ${product.discountPercentage}%\n` +
+      `⭐ Rating: ${product.rating}/5 (${product.reviewCount} reviews)\n` +
+      `🛒 [Buy Now](${product.url})\n`
+    ).join('\n---\n\n');
+    
+    const footer = `\n\n⏰ ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+    
+    return header + deals + footer;
   }
 
   /**

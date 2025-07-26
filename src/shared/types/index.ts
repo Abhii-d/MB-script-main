@@ -30,6 +30,7 @@ export interface HealthKartProduct {
   catName: string; // Category name
   goal: string; // Fitness goal
   urlFragment: string; // Product URL fragment
+  pk_type: boolean; // Determines URL prefix: false = /sv/, true = /pk/
   grps: ProductGroup[]; // Product specifications
   activeQuantityLeft: number;
   vendorName: string;
@@ -67,17 +68,21 @@ export interface Product {
   reviewCount: number;
   isInStock: boolean;
   url: string;
+  urlFragment: string; // Store the raw HealthKart URL fragment
+  pk_type: boolean; // Store the original pk_type for reference
   specifications: ProductSpecifications;
   lastUpdated: Date;
 }
 
 export interface ProductSpecifications {
   weight: string;
+  weightBucket: string;        // e.g., "5.0 lb", "2.0 kg" 
   servingSize: string;
   proteinPerServing: string;
   proteinPercentage: number;
   servingsPerContainer: number;
   flavor: string;
+  flavorBase: string;          // e.g., "Chocolate", "Vanilla", "Strawberry"
   pricePerKg: number;
 }
 
@@ -85,8 +90,10 @@ export interface ProductFilter {
   minDiscount: number;
   maxPrice?: number;
   minRating?: number;
-  brands?: string[];
-  categories?: string[];
+  brands?: readonly string[];
+  categories?: readonly string[];
+  flavors?: readonly string[];          // Filter by flavor preferences
+  weightBuckets?: readonly string[];    // Filter by weight categories  
   inStockOnly: boolean;
   minReviews?: number;
 }
@@ -96,6 +103,8 @@ export interface AlertConfiguration {
   priceDropThreshold: number;
   brands: string[];
   categories: string[];
+  flavors: string[];           // Preferred flavors
+  weightBuckets: string[];     // Preferred weight ranges
   maxPrice: number;
   minRating: number;
 }
