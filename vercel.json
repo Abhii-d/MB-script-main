@@ -1,14 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:api",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
   "env": {
     "NODE_ENV": "production"
   },
   "regions": ["bom1"],
   "functions": {
-    "dist/index.js": {
+    "api/*.ts": {
       "maxDuration": 30
     }
   }
