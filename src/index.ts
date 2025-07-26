@@ -147,4 +147,8 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
+// Export as default for Vercel
+export default app;
+
+// Named export for compatibility
 export { app };
