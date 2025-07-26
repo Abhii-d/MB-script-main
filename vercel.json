@@ -1,15 +1,17 @@
 {
   "version": 2,
+  "buildCommand": "npm run build:api",
+  "outputDirectory": "dist",
   "builds": [
     {
-      "src": "src/index.ts",
+      "src": "dist/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "src/index.ts"
+      "dest": "dist/index.js"
     }
   ],
   "env": {
@@ -17,7 +19,7 @@
   },
   "regions": ["bom1"],
   "functions": {
-    "src/index.ts": {
+    "dist/index.js": {
       "maxDuration": 30
     }
   }
