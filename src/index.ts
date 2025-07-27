@@ -59,6 +59,7 @@ app.post('/api/send-alert', async (_req: Request, res: Response) => {
   
   try {
     logger.info('Processing send alert request', { requestId });
+    logger.info('Request body:', _req.body);
     
     const sendAlertUseCase = serviceFactory.createSendAlertUseCase();
     const result = await sendAlertUseCase.execute(requestId);
