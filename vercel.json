@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "npm run build:api",
   "builds": [
     {
       "src": "dist/index.js",
@@ -12,9 +13,13 @@
       "dest": "dist/index.js"
     }
   ],
-  "buildCommand": "npm run build:api",
   "env": {
     "NODE_ENV": "production"
   },
-  "regions": ["bom1"]
+  "regions": ["bom1"],
+  "functions": {
+    "dist/index.js": {
+      "maxDuration": 30
+    }
+  }
 }
