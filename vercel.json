@@ -1,7 +1,6 @@
 {
   "version": 2,
   "buildCommand": "npm run build:api",
-  "outputDirectory": "dist",
   "builds": [
     {
       "src": "dist/index.js",
