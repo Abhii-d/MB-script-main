@@ -17,7 +17,7 @@
   },
   "regions": ["bom1"],
   "functions": {
-    "dist/index.js": {
+    "dist/index.ts": {
       "maxDuration": 30
     }
   }
