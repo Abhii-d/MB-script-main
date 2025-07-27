@@ -106,6 +106,7 @@ jobs:
                           log('🔍 Triggering deal check...');
                           updateStatus('Checking for deals...', 'info');
                           
+                          log('API_URL', API_URL);
                           const response = await fetch(`${API_URL}/api/send-alert`, {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
