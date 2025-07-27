@@ -1,16 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:api",
   "builds": [
     {
-      "src": "dist/index.js",
+      "src": "dist/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/index.js"
+      "dest": "dist/index.ts"
     }
   ],
   "env": {
