@@ -82,7 +82,7 @@ jobs:
               </div>
               
               <script>
-                  const API_URL = '${{ secrets.VERCEL_API_URL }}' || 'https://healthkart-script-main.vercel.app';
+                  const API_URL = '${{ secrets.VERCEL_API_URL }}' || 'https://mb-script-main.vercel.app';
                   
                   function log(message) {
                       const logDiv = document.getElementById('log');
