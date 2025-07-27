@@ -104,7 +104,7 @@ jobs:
                       
                       try {
                           log('🔍 Triggering deal check...');
-                          updateStatus('Checking for deals...', 'info');
+                          # updateStatus('Checking for deals...', 'info');
                           
                           log('API_URL', `${API_URL}/api/send-alert`);
                           const response = await fetch(`${API_URL}/api/send-alert`, {

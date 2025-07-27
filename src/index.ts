@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://your-github-pages-domain.github.io', 'http://localhost:3000'],
+  origin: ['https://abhii-d.github.io', 'http://localhost:3000'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
