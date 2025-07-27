@@ -43,6 +43,7 @@ const logger = getLogger().createChild({ service: 'ApiServer' });
 // Initialize service factory
 const serviceFactory = new ServiceFactory();
 
+
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
