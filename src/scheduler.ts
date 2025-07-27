@@ -31,7 +31,7 @@ class HealthKartScheduler {
   private intervalId: NodeJS.Timeout | null = null;
   private isRunning = false;
 
-  constructor(apiUrl: string = 'https://healthkart-script-main.vercel.app/api/send-alert', intervalMinutes: number = 30) {
+  constructor(apiUrl: string = 'https://mb-script-main.vercel.app/api/send-alert', intervalMinutes: number = 30) {
     this.apiUrl = apiUrl;
     this.intervalMinutes = intervalMinutes;
   }
@@ -165,7 +165,7 @@ class HealthKartScheduler {
 }
 
 // Configuration
-const VERCEL_API_URL = process.env.VERCEL_API_URL || 'https://healthkart-script-main.vercel.app/api/send-alert';
+const VERCEL_API_URL = process.env.VERCEL_API_URL || 'https://mb-script-main.vercel.app/api/send-alert';
 const MONITORING_INTERVAL = parseInt(process.env.MONITORING_INTERVAL_MINUTES || '30');
 
 // Initialize and start scheduler
