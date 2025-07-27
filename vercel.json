@@ -2,23 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "dist/index.ts",
+      "src": "src/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "dist/index.ts"
+      "dest": "src/index.ts"
     }
   ],
   "env": {
     "NODE_ENV": "production"
   },
-  "regions": ["bom1"],
-  "functions": {
-    "dist/index.ts": {
-      "maxDuration": 30
-    }
-  }
+  "regions": ["bom1"]
 }
