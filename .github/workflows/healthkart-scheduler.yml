@@ -21,24 +21,46 @@ jobs:
       run: |
         echo "🏋️‍♂️ Starting HealthKart deal monitoring..."
         echo "⏰ Timestamp: $(date)"
-        echo "🌐 Calling Vercel API..."
+        echo "🌐 API URL: ${{ secrets.VERCEL_API_URL }}"
+        echo "🔍 Request Details:"
+        echo "  Method: POST"
+        echo "  Endpoint: ${{ secrets.VERCEL_API_URL }}/api/send-alert"
+        echo "  Content-Type: application/json"
         
-        # Call the Vercel API endpoint
+        # Prepare request payload
+        request_payload='{
+          "source": "github-actions-scheduler",
+          "timestamp": "'$(date -Iseconds)'",
+          "test_mode": "${{ github.event.inputs.test_mode || 'false' }}"
+        }'
+        
+        echo "📤 Request Payload:"
+        echo "$request_payload" | jq '.' || echo "$request_payload"
+        
+        echo ""
+        echo "🚀 Making API call..."
+        
+        # Call the Vercel API endpoint with detailed logging
         response=$(curl -s -w "\n%{http_code}" -X POST \
           "${{ secrets.VERCEL_API_URL }}/api/send-alert" \
           -H "Content-Type: application/json" \
-          -d '{
-            "source": "github-actions-scheduler",
-            "timestamp": "'$(date -Iseconds)'",
-            "test_mode": "${{ github.event.inputs.test_mode || 'false' }}"
-          }')
+          -H "User-Agent: GitHub-Actions-Scheduler/1.0" \
+          -d "$request_payload")
         
         # Extract HTTP status code and response body
         http_code=$(echo "$response" | tail -n1)
         response_body=$(echo "$response" | head -n -1)
         
+        echo ""
+        echo "📥 Response Details:"
         echo "📊 HTTP Status Code: $http_code"
-        echo "📄 Response Body: $response_body"
+        echo "📄 Response Headers: Content-Type application/json"
+        echo "📄 Response Body:"
+        if [ -n "$response_body" ]; then
+          echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
+        else
+          echo "(empty response body)"
+        fi
         
         # Check if the request was successful
         if [ "$http_code" -eq 200 ]; then
