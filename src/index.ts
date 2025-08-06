@@ -36,21 +36,52 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize logger
-initializeLogger({ level: 'info', enableConsole: true });
-const logger = getLogger().createChild({ service: 'ApiServer' });
+// Safe initialization with error handling
+let logger: ReturnType<typeof getLogger>;
+let serviceFactory: ServiceFactory;
 
-// Initialize service factory
-const serviceFactory = new ServiceFactory();
+try {
+  // Initialize logger
+  initializeLogger({ level: 'info', enableConsole: true });
+  logger = getLogger().createChild({ service: 'ApiServer' });
+  logger.info('Logger initialized successfully');
+
+  // Initialize service factory
+  serviceFactory = new ServiceFactory();
+  logger.info('Service factory initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize services:', error);
+  // Create a minimal logger fallback
+  logger = {
+    info: console.log,
+    error: console.error,
+    warn: console.warn,
+    debug: console.debug,
+    createChild: () => ({ info: console.log, error: console.error, warn: console.warn, debug: console.debug })
+  } as any;
+}
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'MB Script API',
-    version: '1.0.0'
-  });
+  try {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'MB Script API',
+      version: '1.0.0',
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || 'not_set',
+        hasLoggerInit: typeof logger !== 'undefined',
+        hasServiceFactory: typeof serviceFactory !== 'undefined'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API endpoint to fetch deals and send Telegram alerts
@@ -59,6 +90,10 @@ app.post('/api/send-alert', async (req: Request, res: Response) => {
   
   try {
     logger.info('Processing send alert request', { requestId, source: req.body?.source || 'unknown' });
+    
+    if (!serviceFactory) {
+      throw new Error('Service factory not initialized. Check environment variables and dependencies.');
+    }
     
     const sendAlertUseCase = serviceFactory.createSendAlertUseCase();
     const result = await sendAlertUseCase.execute(requestId);
