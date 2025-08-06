@@ -3,8 +3,8 @@
  * Main entry point for the Vercel-deployed API
  * 
  * Architecture:
+ * - GitHub Actions: Handles scheduling and calls this API every 30 minutes
  * - Vercel (India server): Handles HealthKart API calls + Telegram alerts
- * - GitHub Pages: Handles scheduling and calls this API
  */
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://abhii-d.github.io', 'http://localhost:3000'],
+  origin: ['*'], // Allow GitHub Actions to call this API
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -43,7 +43,6 @@ const logger = getLogger().createChild({ service: 'ApiServer' });
 // Initialize service factory
 const serviceFactory = new ServiceFactory();
 
-
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -55,12 +54,11 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 // API endpoint to fetch deals and send Telegram alerts
-app.post('/api/send-alert', async (_req: Request, res: Response) => {
+app.post('/api/send-alert', async (req: Request, res: Response) => {
   const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    logger.info('Processing send alert request', { requestId });
-    logger.info('Request body:', _req.body);
+    logger.info('Processing send alert request', { requestId, source: req.body?.source || 'unknown' });
     
     const sendAlertUseCase = serviceFactory.createSendAlertUseCase();
     const result = await sendAlertUseCase.execute(requestId);

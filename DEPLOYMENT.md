@@ -1,34 +1,49 @@
-# 🚀 Deployment Guide - Hybrid Architecture
+# 🚀 Deployment Guide - Hybrid Scheduler Architecture
 
-This guide explains how to deploy the HealthKart monitoring system using a hybrid architecture to overcome geographical API restrictions.
+This guide explains how to deploy the HealthKart monitoring system using GitHub Actions for scheduling and Vercel for API processing.
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────┐    HTTP Requests    ┌──────────────────┐
-│  GitHub Pages   │ ──────────────────► │  Vercel (India)  │
-│   (Scheduler)   │                     │   (API Server)   │
-│                 │ ◄────────────────── │                  │
-└─────────────────┘    JSON Response    └──────────────────┘
-        │                                        │
-        │                                        │
-        ▼                                        ▼
-┌─────────────────┐                     ┌──────────────────┐
-│   Web Browser   │                     │  HealthKart API  │
-│  (Monitoring)   │                     │   + Telegram     │
-└─────────────────┘                     └──────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    GitHub Actions                           │
+│                   (Free Scheduler)                         │
+│                                                             │
+│  ┌─────────────────┐    HTTP POST    ┌──────────────────┐   │
+│  │ Cron Schedule   │─────────────────▶│ curl API call   │   │
+│  │ (every 30 min)  │                 │ to Vercel        │   │
+│  └─────────────────┘                 └──────────────────┘   │
+└─────────────────────────────────────────│───────────────────┘
+                                          │
+                                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Vercel API Server                          │
+│                 (Mumbai Region)                             │
+│                                                             │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐   │
+│  │ Express API   │─▶│ HealthKart    │─▶│ Telegram Bot  │   │
+│  │ /api/send-alert│  │ API Client    │  │ Service       │   │
+│  └───────────────┘  └───────────────┘  └───────────────┘   │
+└─────────────────────────────────────────│───────────────────┘
+                                          │
+                                          ▼
+                                ┌───────────────┐
+                                │ Telegram      │
+                                │ Channel       │
+                                └───────────────┘
 ```
 
 **Why this architecture?**
-- **HealthKart API**: Only works from Indian servers
-- **Vercel**: Has Indian servers (Mumbai region)
-- **GitHub Pages**: Free hosting for scheduler
-- **Telegram**: Works globally
+- **GitHub Actions**: Free unlimited scheduling (no Vercel limitations)
+- **Vercel Mumbai**: Indian server region for HealthKart API access  
+- **Separation of Concerns**: Scheduling vs Processing
+- **Cost Effective**: Free GitHub Actions + Free Vercel tier
+- **Telegram**: Global notification delivery
 
 ## 📋 Prerequisites
 
-1. **Vercel Account** - For API deployment
-2. **GitHub Account** - For scheduler deployment
+1. **Vercel Account** - For API server deployment
+2. **GitHub Repository** - For scheduler deployment
 3. **Telegram Bot** - For alerts
 4. **Environment Variables** - Configured properly
 
@@ -36,7 +51,7 @@ This guide explains how to deploy the HealthKart monitoring system using a hybri
 
 ### 1.1 Install Dependencies
 ```bash
-npm install express cors @types/express @types/cors
+npm install
 ```
 
 ### 1.2 Build the Project
@@ -66,7 +81,7 @@ vercel --prod
 
 ### 1.4 Configure Vercel Settings
 - **Region**: Mumbai (bom1) - specified in `vercel.json`
-- **Function Timeout**: 30 seconds
+- **Function Timeout**: Default (10 seconds is sufficient)
 - **Environment**: Production
 
 ### 1.5 Test API Endpoints
@@ -74,53 +89,26 @@ vercel --prod
 # Health check
 curl https://your-app.vercel.app/health
 
-# Get current deals
-curl https://your-app.vercel.app/api/deals
-
-# Trigger alert
-curl -X POST https://your-app.vercel.app/api/send-alert
+# Test alert endpoint
+curl -X POST https://your-app.vercel.app/api/send-alert \
+  -H "Content-Type: application/json" \
+  -d '{"source": "manual-test"}'
 ```
 
-## 🔧 Step 2: GitHub Pages Deployment (Scheduler)
+## 📱 Step 2: Telegram Bot Setup
 
-### 2.1 Repository Setup
-1. Push your code to GitHub
-2. Go to repository Settings → Pages
-3. Enable GitHub Pages from Actions
-
-### 2.2 Configure Secrets
-Go to Settings → Secrets and variables → Actions:
-```
-VERCEL_API_URL = https://your-app.vercel.app
-```
-
-### 2.3 Enable GitHub Actions
-The workflow `.github/workflows/deploy-scheduler.yml` will:
-- Build the project
-- Create a monitoring dashboard
-- Deploy to GitHub Pages
-- Run scheduled checks every 30 minutes
-
-### 2.4 Manual Trigger
-You can manually trigger the workflow:
-1. Go to Actions tab
-2. Select "Deploy Scheduler to GitHub Pages"
-3. Click "Run workflow"
-
-## 📱 Step 3: Telegram Bot Setup
-
-### 3.1 Create Bot
+### 2.1 Create Bot
 1. Message [@BotFather](https://t.me/botfather)
 2. Use `/newbot` command
 3. Save the bot token
 
-### 3.2 Get Chat ID
+### 2.2 Get Chat ID
 ```bash
 # Send a message to your bot, then:
 curl https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 ```
 
-### 3.3 Test Bot
+### 2.3 Test Bot
 ```bash
 curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage" \
   -H "Content-Type: application/json" \
@@ -129,6 +117,46 @@ curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage" \
     "text": "🏋️‍♂️ HealthKart monitor is now active!"
   }'
 ```
+
+## 🤖 Step 3: GitHub Actions Setup
+
+### 3.1 Repository Setup
+1. Push your code to GitHub repository
+2. Go to repository **Settings** → **Actions** → **General**
+3. Enable "Allow all actions and reusable workflows"
+
+### 3.2 Configure Secrets
+Go to **Settings** → **Secrets and variables** → **Actions** and add:
+
+**Required Secrets:**
+```
+VERCEL_API_URL = https://your-app.vercel.app
+```
+
+**Optional Secrets (for error notifications):**
+```
+TELEGRAM_ERROR_CHAT_ID = your_error_chat_id
+TELEGRAM_BOT_TOKEN = your_bot_token
+```
+
+### 3.3 Enable Workflow
+The workflow file `.github/workflows/healthkart-scheduler.yml` will:
+- Run automatically every 30 minutes
+- Call your Vercel API endpoint
+- Log all results
+- Handle errors gracefully
+
+### 3.4 Manual Trigger
+You can manually trigger the workflow:
+1. Go to **Actions** tab in your repository
+2. Select "HealthKart Deal Scheduler"
+3. Click "Run workflow"
+4. Optionally enable "test mode"
+
+### 3.5 Monitor Workflow
+- Check the **Actions** tab for workflow runs
+- View logs for each execution
+- Monitor success/failure rates
 
 ## ⚙️ Step 4: Configuration
 

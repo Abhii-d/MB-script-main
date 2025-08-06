@@ -1,0 +1,91 @@
+name: HealthKart Deal Scheduler
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+    inputs:
+      test_mode:
+        description: 'Run in test mode'
+        required: false
+        default: 'false'
+
+jobs:
+  monitor-deals:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔍 Trigger HealthKart Deal Check
+      run: |
+        echo "🏋️‍♂️ Starting HealthKart deal monitoring..."
+        echo "⏰ Timestamp: $(date)"
+        echo "🌐 Calling Vercel API..."
+        
+        # Call the Vercel API endpoint
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+          "${{ secrets.VERCEL_API_URL }}/api/send-alert" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "source": "github-actions-scheduler",
+            "timestamp": "'$(date -Iseconds)'",
+            "test_mode": "${{ github.event.inputs.test_mode || 'false' }}"
+          }')
+        
+        # Extract HTTP status code and response body
+        http_code=$(echo "$response" | tail -n1)
+        response_body=$(echo "$response" | head -n -1)
+        
+        echo "📊 HTTP Status Code: $http_code"
+        echo "📄 Response Body: $response_body"
+        
+        # Check if the request was successful
+        if [ "$http_code" -eq 200 ]; then
+          echo "✅ Deal monitoring completed successfully!"
+          
+          # Extract key metrics from response (if available)
+          if echo "$response_body" | grep -q "totalProductsFetched"; then
+            total_products=$(echo "$response_body" | jq -r '.data.totalProductsFetched // "N/A"')
+            qualifying_deals=$(echo "$response_body" | jq -r '.data.qualifyingDeals // "N/A"')
+            telegram_sent=$(echo "$response_body" | jq -r '.data.telegramSent // false')
+            
+            echo "📈 Products Fetched: $total_products"
+            echo "🎯 Qualifying Deals: $qualifying_deals"
+            echo "📱 Telegram Alert Sent: $telegram_sent"
+          fi
+        else
+          echo "❌ Deal monitoring failed with status code: $http_code"
+          echo "📄 Error details: $response_body"
+          exit 1
+        fi
+
+    - name: 🚨 Notify on Failure
+      if: failure()
+      run: |
+        echo "💥 HealthKart monitoring workflow failed!"
+        echo "⏰ Failed at: $(date)"
+        echo "🔍 Check the logs above for error details"
+        
+        # Optional: Send failure notification to Telegram (if configured)
+        if [ -n "${{ secrets.TELEGRAM_ERROR_CHAT_ID }}" ] && [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "chat_id": "${{ secrets.TELEGRAM_ERROR_CHAT_ID }}",
+              "text": "🚨 HealthKart Scheduler Failed\n\n⏰ Time: '$(date)'\n🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "parse_mode": "Markdown"
+            }'
+        fi
+
+    - name: 📊 Summary
+      if: always()
+      run: |
+        echo "📋 HealthKart Deal Monitoring Summary"
+        echo "=================================="
+        echo "🗓️  Date: $(date)"
+        echo "🔄 Workflow: ${{ github.workflow }}"
+        echo "🎯 Run ID: ${{ github.run_id }}"
+        echo "🌐 API URL: ${{ secrets.VERCEL_API_URL }}"
+        echo "⚡ Test Mode: ${{ github.event.inputs.test_mode || 'false' }}"
+        echo "✅ Job Status: ${{ job.status }}"
