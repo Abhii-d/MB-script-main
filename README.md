@@ -13,73 +13,7 @@ A TypeScript-based monitoring script that tracks specific whey protein prices on
 - 📊 **Historical Tracking** - Maintains price history for analysis
 - 🛡️ **Error Handling** - Robust error handling and retry mechanisms
 
-## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js >= 18.0.0
-- npm >= 8.0.0
-- Telegram Bot Token
-- Telegram Chat/Channel ID
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd MB-script-main
-
-# Install dependencies
-npm install
-
-# Copy environment template
-cp .env.example .env
-
-# Configure your environment variables
-nano .env
-```
-
-### Configuration
-
-Create a `.env` file with the following variables:
-
-```env
-# Telegram Configuration
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-TELEGRAM_CHAT_ID=your_chat_or_channel_id_here
-
-# Monitoring Configuration
-PRODUCT_URL=https://www.muscleblaze.com/your-product-url
-MONITOR_INTERVAL=300000  # 5 minutes in milliseconds
-PRICE_THRESHOLD=10       # Minimum price drop percentage for alerts
-
-# Optional
-LOG_LEVEL=info
-RETRY_ATTEMPTS=3
-RETRY_DELAY=5000
-```
-
-## 🔧 Usage
-
-### Development Mode
-
-```bash
-# Build and run once
-npm run dev
-
-# Run in watch mode for development
-npm run build:watch
-```
-
-### Production Mode
-
-```bash
-# Build the project
-npm run build
-
-# Start monitoring
-npm run start
-```
 
 ### Available Scripts
 
@@ -176,22 +110,6 @@ MONITOR_INTERVAL=3600000
 - Automatic retry on failures
 - Graceful shutdown handling
 
-## 🛠️ Deployment
-
-### Using PM2 (Recommended)
-
-```bash
-# Install PM2 globally
-npm install -g pm2
-
-# Start with PM2
-pm2 start npm --name "mb-monitor" -- start
-
-# Monitor
-pm2 logs mb-monitor
-pm2 status
-```
-
 ### Using Cron Job
 
 ```bash
@@ -202,12 +120,6 @@ crontab -e
 */5 * * * * cd /path/to/MB-script-main && npm run start
 ```
 
-## 🔍 Monitoring & Logs
-
-- Application logs are stored in `logs/` directory
-- Configure log levels via `LOG_LEVEL` environment variable
-- Monitor script performance and errors through logs
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -215,24 +127,6 @@ crontab -e
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## ⚠️ Disclaimer
-
-This tool is for personal use only. Please respect Muscle Blaze's terms of service and implement appropriate rate limiting to avoid overwhelming their servers.
-
-## 🆘 Support
-
-If you encounter any issues:
-
-1. Check the logs in `logs/` directory
-2. Verify your environment variables
-3. Ensure your Telegram bot has proper permissions
-4. Check your internet connection and proxy settings
-
 ---
 
 **Happy Monitoring! 🏋️‍♂️💪**
